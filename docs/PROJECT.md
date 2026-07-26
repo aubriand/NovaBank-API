@@ -9,15 +9,16 @@ selon des standards d'entreprise.
 
 ## Etat actuel
 
--   Sprint : 2
--   Ticket courant : BANK-005
--   Terminés :
-    -   BANK-001 Initialisation
-    -   BANK-002 Docker + PostgreSQL
-    -   BANK-003 Flyway
-    -   BANK-004 JPA
--   En cours :
-    -   BANK-005 Security
+- Sprint : 2
+- Ticket courant : BANK-006
+- Terminés :
+  - BANK-001 Initialisation
+  - BANK-002 Docker + PostgreSQL
+  - BANK-003 Flyway
+  - BANK-004 JPA
+  - BANK-005 Security
+- En cours :
+  - BANK-006 JWT Authentication
 
 ## Stack
 
