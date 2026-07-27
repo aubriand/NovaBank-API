@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: bank-api-postgres
+
+    environment:
+      POSTGRES_DB: bank_api
+      POSTGRES_USER: bank_user
+      POSTGRES_PASSWORD: bankpassword
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - bank_api_postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bank_user -d bank_api"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  bank_api_postgres_data:
