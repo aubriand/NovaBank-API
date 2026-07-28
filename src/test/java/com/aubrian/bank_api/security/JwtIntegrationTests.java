@@ -2,22 +2,30 @@ package com.aubrian.bank_api.security;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.aubrian.bank_api.security.dto.LoginRequest;
 import com.aubrian.bank_api.security.service.JwtService;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
+import tools.jackson.databind.ObjectMapper;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import(JwtIntegrationTests.ProtectedEnpointTestConfig.class)
 public class JwtIntegrationTests {
 
   @Autowired
@@ -25,6 +33,9 @@ public class JwtIntegrationTests {
 
   @Autowired
   private JwtService jwtService;
+
+  @Autowired
+  private ObjectMapper objectMapper;
 
   @Test
   void shouldValidateLogin() throws Exception {
@@ -53,45 +64,46 @@ public class JwtIntegrationTests {
 
   @Test
   void shouldReturnUnauthorizedOnProtectedEndpointWithoutToken() throws Exception {
-    mockMvc.perform(
-        post("/auth/protected-endpoint"))
-        .andExpect(status().is(401));
+    mockMvc.perform(get("/test/protected"))
+        .andExpect(status().isUnauthorized());
   }
 
   @Test
-  void shouldReturnAuthorizedOnProtectedEndpointWithToken() throws Exception {
-    String username = "admin";
-
-    String token = jwtService.generateToken(username);
+  void shouldReturnAuthorizedOnProtectedEndpointWithValidToken() throws Exception {
+    String token = jwtService.generateToken("admin");
 
     mockMvc.perform(
-        get("/actuator/health")
-            .headers(t -> 
-              t.setBearerAuth(token)
-            ))
-        .andExpect(status().is(200));
+        get("/test/protected")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(content().string("protected"));
   }
 
   @Test
   void shouldReturnUnauthorizedOnProtectedEndpointWithInvalidToken() throws Exception {
-    String username = "admin";
-
-    String token = jwtService.generateToken(username);
-    String invalidToken = token.substring(0, token.length() - 1) + "X";
+    String token = jwtService.generateToken("admin");
+    String invalidToken = token.substring(0, token.length() - 1)
+        + (token.endsWith("X") ? "Y" : "X");
 
     mockMvc.perform(
-        get("/actuator/health")
-            .headers(t -> 
-              t.setBearerAuth(invalidToken)
-            ))
-        .andExpect(status().is(401));
+        get("/test/protected")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + invalidToken))
+        .andExpect(status().isUnauthorized());
   }
 
-  public static String asJsonString(final Object obj) {
-    try {
-      return new ObjectMapper().writeValueAsString(obj);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
+  private String asJsonString(Object object) throws Exception {
+    return objectMapper.writeValueAsString(object);
+  }
+
+  @TestConfiguration
+  static class ProtectedEnpointTestConfig {
+    @RestController
+    static class ProtectedEnpointController {
+
+      @GetMapping("/test/protected")
+      String protectedEndpoint() {
+        return "protected";
+      }
     }
   }
 }
