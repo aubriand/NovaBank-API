@@ -17,8 +17,9 @@ selon des standards d'entreprise.
   - BANK-003 Flyway
   - BANK-004 JPA
   - BANK-005 Security
-- En cours :
   - BANK-006 JWT Authentication
+- En cours :
+  - BANK-007 User Management
 
 ## Stack
 
@@ -69,3 +70,38 @@ Au début d'une nouvelle discussion, écrire simplement : 'Continue
 NovaBank'.
 
 PROJECT.md est la référence et sera mis à jour après chaque ticket.
+
+
+## BANK-006 - JWT Authentication
+
+### Fonctionnalités
+
+- Authentification JWT stateless
+- Endpoint POST /auth/login
+- Génération des JWT (HS256)
+- Validation des JWT
+- JwtAuthenticationFilter
+- AuthenticationEntryPoint
+- ApiErrorResponse
+- AuthenticationService
+- AuthenticationController
+- JwtProperties avec ConfigurationProperties
+- PasswordEncoder
+- AuthenticationManager
+- UserDetailsService temporaire (InMemory)
+
+### Tests validés
+
+- Login valide
+- Login invalide
+- Endpoint protégé sans JWT
+- Endpoint protégé avec JWT valide
+- JWT altéré rejeté
+
+### Décisions d'architecture
+
+- API totalement stateless
+- Pas de logique métier dans les Controllers
+- AuthenticationManager responsable de l'authentification
+- JwtService responsable uniquement du JWT
+- Gestion centralisée des erreurs de sécurité
