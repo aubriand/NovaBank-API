@@ -39,7 +39,7 @@ public class JwtIntegrationTests {
 
   @Test
   void shouldValidateLogin() throws Exception {
-    String username = "admin";
+    String username = "user@demo.fr";
     String password = "password";
 
     mockMvc.perform(
@@ -52,7 +52,7 @@ public class JwtIntegrationTests {
 
   @Test
   void shouldReturnUnauthorizedWithBadPassword() throws Exception {
-    String username = "admin";
+    String username = "user@demo.fr";
     String password = "false-password";
 
     mockMvc.perform(
@@ -70,7 +70,7 @@ public class JwtIntegrationTests {
 
   @Test
   void shouldReturnAuthorizedOnProtectedEndpointWithValidToken() throws Exception {
-    String token = jwtService.generateToken("admin");
+    String token = jwtService.generateToken("user@demo.fr");
 
     mockMvc.perform(
         get("/test/protected")
@@ -81,7 +81,7 @@ public class JwtIntegrationTests {
 
   @Test
   void shouldReturnUnauthorizedOnProtectedEndpointWithInvalidToken() throws Exception {
-    String token = jwtService.generateToken("admin");
+    String token = jwtService.generateToken("user@demo.fr");
     String invalidToken = token.substring(0, token.length() - 1)
         + (token.endsWith("X") ? "Y" : "X");
 
