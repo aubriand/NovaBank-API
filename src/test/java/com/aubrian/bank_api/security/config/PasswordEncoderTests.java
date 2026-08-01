@@ -19,4 +19,11 @@ public class PasswordEncoderTests {
     assertNotEquals(rawPassword, encodedPassword);
     assertTrue(passwordEncoder.matches(rawPassword, encodedPassword));
   }
+
+  @Test
+	void generateHash() {
+		PasswordEncoder encoder = new BCryptPasswordEncoder();
+
+		System.out.println(encoder.encode("password"));
+	}
 }

@@ -21,9 +21,9 @@ public class AuthenticationService {
   }
 
   public LoginResponse authenticate(LoginRequest loginRequest) {
-    UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = UsernamePasswordAuthenticationToken
-        .unauthenticated(loginRequest.username(), loginRequest.password());
-    Authentication authentication = authenticationManager.authenticate(usernamePasswordAuthenticationToken);
+    UsernamePasswordAuthenticationToken authenticationToken = UsernamePasswordAuthenticationToken
+        .unauthenticated(loginRequest.email(), loginRequest.password());
+    Authentication authentication = authenticationManager.authenticate(authenticationToken);
 
     UserDetails userDetails = (UserDetails) authentication.getPrincipal();
     String token = jwtService.generateToken(userDetails.getUsername());
