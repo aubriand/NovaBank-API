@@ -67,3 +67,39 @@ Un mot de passe ne doit jamais être récupérable depuis la base. BCrypt produi
 
 ### 5. Pourquoi retourner Optional<User> depuis UserRepository ?
 Parce qu'une recherche par email peut ne rien retourner. `Optional` représente explicitement cette absence, évite le retour de `null` et oblige l'appelant à gérer le cas, par exemple avec `orElseThrow`.
+
+## BANK-008 - Roles & Authorizations
+
+### 1. Pourquoi utiliser EnumType.STRING plutôt que ORDINAL ?
+
+Le stockage sous forme de texte reste stable si l'ordre des constantes change. Avec ORDINAL, modifier l'ordre de l'enum peut corrompre les données existantes.
+
+---
+
+### 2. Quelle est la différence entre hasRole() et hasAuthority() ?
+
+`hasRole("ADMIN")` recherche automatiquement l'autorité `ROLE_ADMIN`.
+
+`hasAuthority("ROLE_ADMIN")` compare directement la valeur fournie sans ajouter de préfixe.
+
+---
+
+### 3. Pourquoi créer un AccessDeniedHandler ?
+
+Pour centraliser les réponses 403 lorsque l'utilisateur est authentifié mais ne possède pas les autorisations nécessaires.
+
+---
+
+### 4. Quelle est la différence entre AuthenticationEntryPoint et AccessDeniedHandler ?
+
+`AuthenticationEntryPoint` intervient lorsqu'une authentification est requise ou invalide et renvoie un 401.
+
+`AccessDeniedHandler` intervient lorsqu'un utilisateur authentifié tente d'accéder à une ressource sans les droits nécessaires et renvoie un 403.
+
+---
+
+### 5. Quelle est la différence entre 401 et 403 ?
+
+401 : l'utilisateur n'est pas authentifié (JWT absent, invalide ou expiré).
+
+403 : l'utilisateur est authentifié mais ne possède pas les autorisations nécessaires.

@@ -156,4 +156,32 @@ Au début d'une nouvelle discussion, écrire simplement :
 - Flyway
 - JPA
 
-Le système est prêt à accueillir la gestion des rôles et des autorisations dans BANK-008.
+# BANK-008 - Roles & Authorizations
+
+## Fonctionnalités
+
+- Ajout de l'enum `UserRole` (`USER`, `ADMIN`)
+- Stockage du rôle dans la table `users`
+- Mapping JPA avec `EnumType.STRING`
+- Migration Flyway pour ajouter la colonne `role`
+- `JpaUserDetailsService` construit les authorities à partir du rôle en base
+- Protection des endpoints avec `hasRole` / `hasAnyRole`
+- `JwtAccessDeniedHandler` pour les réponses 403
+- Distinction entre erreurs 401 et 403
+
+## Tests validés
+
+- Endpoint protégé sans JWT → 401
+- Endpoint accessible avec rôle USER → 200
+- Endpoint ADMIN avec JWT USER → 403
+- Endpoint ADMIN avec JWT ADMIN → 200
+- `mvn clean verify` réussi
+
+## Décisions d'architecture
+
+- Les rôles sont persistés en base.
+- Les rôles sont représentés par un enum Java.
+- Les enums sont stockés avec `EnumType.STRING`.
+- Les authorities Spring sont construites à partir du rôle métier.
+- `AuthenticationEntryPoint` traite les erreurs d'authentification (401).
+- `AccessDeniedHandler` traite les erreurs d'autorisation (403).
