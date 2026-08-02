@@ -8,6 +8,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.aubrian.bank_api.security.filter.JwtAccessDeniedHandler;
 import com.aubrian.bank_api.security.filter.JwtAuthenticationEntryPoint;
 import com.aubrian.bank_api.security.filter.JwtAuthenticationFilter;
 
@@ -16,11 +17,14 @@ public class SecurityConfig {
 
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
   private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+  private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
   
   public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
-      JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint) {
+      JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint,
+      JwtAccessDeniedHandler jwtAccessDeniedHandler) {
     this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
+    this.jwtAccessDeniedHandler = jwtAccessDeniedHandler;
   }
 
   @Bean
@@ -34,10 +38,13 @@ public class SecurityConfig {
       )
       .exceptionHandling(exceptions -> exceptions
         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+        .accessDeniedHandler(jwtAccessDeniedHandler)
       )
       .authorizeHttpRequests(auth -> auth
         .requestMatchers("/actuator/health").permitAll()
-        .requestMatchers("/auth/login").permitAll()
+        .requestMatchers("/auth/**").permitAll()
+        .requestMatchers("/test/any-role").authenticated()
+        .requestMatchers("/test/admin-role").hasRole("ADMIN")
         .anyRequest().authenticated()
       )
       .addFilterBefore(
