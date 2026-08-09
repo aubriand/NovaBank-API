@@ -185,3 +185,43 @@ Au début d'une nouvelle discussion, écrire simplement :
 - Les authorities Spring sont construites à partir du rôle métier.
 - `AuthenticationEntryPoint` traite les erreurs d'authentification (401).
 - `AccessDeniedHandler` traite les erreurs d'autorisation (403).
+
+
+# BANK-009 - Customer Management
+
+## Fonctionnalités
+
+- Création de la table `customers` avec Flyway
+- Entité JPA `Customer`
+- Identifiants métier en UUID
+- `CustomerRepository` avec Spring Data JPA
+- `CustomerService` pour les cas d'utilisation
+- DTO `CreateCustomerRequest` et `CustomerResponse`
+- Endpoint `POST /customers`
+- Endpoint `GET /customers/{id}`
+- Validation Bean Validation
+- `CustomerNotFoundException`
+- Gestion centralisée des erreurs avec `GlobalExceptionHandler`
+
+## Tests validés
+
+- Création valide → 201
+- Création invalide → 400
+- Consultation d'un client existant → 200
+- Consultation d'un client inexistant → 404
+- `mvn clean verify` réussi
+- 18 tests exécutés
+- 0 échec
+- 0 erreur
+
+## Décisions d'architecture
+
+- `Customer` reste indépendant de l'entité de sécurité `User`.
+- Les Controllers n'accèdent jamais directement aux Repositories.
+- Les Entities JPA ne sont pas exposées directement dans l'API.
+- Les DTO définissent les frontières HTTP.
+- Bean Validation est appliquée aux DTO d'entrée.
+- Les exceptions applicatives restent indépendantes de HTTP.
+- `GlobalExceptionHandler` traduit les exceptions applicatives en réponses HTTP.
+- Les codes postaux sont représentés comme des chaînes de caractères.
+- Les UUID ne remplacent pas les contrôles d'autorisation.
