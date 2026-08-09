@@ -8,7 +8,7 @@ selon des standards d'entreprise.
 ## État actuel
 
 - Sprint : 2
-- Ticket courant : BANK-008
+- Ticket courant : BANK-010
 - Terminés :
   - BANK-001 Initialisation
   - BANK-002 Docker + PostgreSQL
@@ -17,6 +17,9 @@ selon des standards d'entreprise.
   - BANK-005 Security
   - BANK-006 JWT Authentication
   - BANK-007 User Management
+  - BANK-008 Roles & Authorizations
+  - BANK-009 Customer Management
+  - BANK-010 Account Management
 - En cours :
   - Aucun ticket ouvert
 
@@ -225,3 +228,57 @@ Au début d'une nouvelle discussion, écrire simplement :
 - `GlobalExceptionHandler` traduit les exceptions applicatives en réponses HTTP.
 - Les codes postaux sont représentés comme des chaînes de caractères.
 - Les UUID ne remplacent pas les contrôles d'autorisation.
+
+# BANK-010 - Account Management
+
+## Fonctionnalités
+
+- Création de la table `accounts` avec Flyway
+- Entité JPA `Account`
+- Identifiants en UUID
+- Relation `Account` → `Customer` avec `@ManyToOne(fetch = FetchType.LAZY)`
+- Clé étrangère `customer_id` non nullable
+- Solde représenté avec `BigDecimal`
+- Solde initial imposé à zéro côté serveur
+- Stockage PostgreSQL du solde avec un type `NUMERIC`
+- `AccountRepository` avec Spring Data JPA
+- `AccountService` pour les cas d'utilisation
+- DTO `CreateAccountRequest` et `AccountResponse`
+- Génération serveur d'un identifiant bancaire interne préfixé par `NB`
+- Endpoint `POST /accounts`
+- Endpoint `GET /accounts/{id}`
+- Validation Bean Validation
+- `AccountNotFoundException`
+- Extension de `GlobalExceptionHandler` pour les comptes inexistants
+
+## Tests validés
+
+- Création avec un client existant → 201
+- Création avec un client inexistant → 404
+- Création avec `customerId` null → 400
+- Consultation d'un compte existant → 200
+- Consultation d'un compte inexistant → 404
+- Vérification du `customerId` dans la réponse
+- Vérification du préfixe `NB` de l'identifiant bancaire
+- Vérification du solde initial à zéro
+- Vérification de la génération de l'identifiant du compte
+- `mvn clean verify` réussi
+- 23 tests exécutés
+- 0 échec
+- 0 erreur
+
+## Décisions d'architecture
+
+- Un `Customer` peut posséder plusieurs comptes ; `Account` référence donc `Customer` avec une relation `ManyToOne`.
+- La relation vers `Customer` est chargée en `LAZY`.
+- La relation reste unidirectionnelle : aucune collection de comptes n'est ajoutée à `Customer` tant qu'un cas d'utilisation ne l'exige pas.
+- Les montants monétaires utilisent `BigDecimal` en Java et un type numérique exact en PostgreSQL.
+- Le client HTTP ne contrôle ni le solde initial ni la génération de l'identifiant bancaire.
+- Le solde initial est toujours zéro lors de la création.
+- `AccountResponse` expose `customerId` et non l'entité `Customer`.
+- `AccountService` orchestre l'accès à `CustomerRepository` et `AccountRepository`.
+- Les Controllers n'accèdent jamais directement aux Repositories.
+- `AccountNotFoundException` reste indépendante de HTTP.
+- `GlobalExceptionHandler` traduit les exceptions applicatives en réponses HTTP.
+- Les contraintes JPA ne remplacent pas les contraintes d'intégrité PostgreSQL.
+

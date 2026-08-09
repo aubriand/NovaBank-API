@@ -1,3 +1,4 @@
+DELETE FROM accounts;
 DELETE FROM customers;
 
 INSERT INTO customers (
