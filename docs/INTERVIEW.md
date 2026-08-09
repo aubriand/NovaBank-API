@@ -136,3 +136,34 @@ Il fournit un identifiant globalement unique et non séquentiel. Cela rend aussi
 
 ### 10. Quelle différence entre NOT NULL et @NotBlank ?
 `NOT NULL` protège l'intégrité au niveau PostgreSQL. `@NotBlank` valide plus tôt la requête HTTP et refuse également les chaînes vides ou uniquement composées d'espaces.
+## BANK-010 - Account Management
+
+### 1. Pourquoi Account → Customer est-il modélisé avec @ManyToOne et non @OneToOne ?
+Plusieurs comptes bancaires peuvent appartenir au même client, tandis qu'un compte appartient à un seul client. La relation côté `Account` est donc `@ManyToOne`.
+
+### 2. Pourquoi avons-nous choisi FetchType.LAZY sur la relation Customer ?
+Pour éviter de charger systématiquement le `Customer` avec chaque `Account` lorsque ses données ne sont pas nécessaires. Cela limite les chargements inutiles et laisse le cas d'utilisation décider quand la relation doit être chargée.
+
+### 3. Pourquoi utilise-t-on BigDecimal pour balance plutôt que double ?
+`double` utilise une représentation binaire en virgule flottante qui peut introduire des erreurs d'arrondi. `BigDecimal` permet des calculs décimaux précis et contrôlés, indispensables pour des montants financiers.
+
+### 4. Pourquoi le client HTTP ne peut-il pas fournir le solde initial lors de POST /accounts ?
+Le solde initial est un invariant métier contrôlé par le serveur. Autoriser le client à le choisir permettrait de créer arbitrairement de l'argent. Le compte est donc créé avec `BigDecimal.ZERO` côté serveur.
+
+### 5. Quelle différence entre nullable = false dans @JoinColumn et NOT NULL dans la migration SQL ?
+`nullable = false` décrit la contrainte dans le mapping JPA et peut être utilisé par Hibernate pour le schéma ou certaines vérifications. `NOT NULL` est la contrainte réellement appliquée par PostgreSQL et protège l'intégrité des données indépendamment de l'application.
+
+### 6. Pourquoi AccountResponse expose-t-il customerId plutôt que l'objet Customer complet ?
+Le DTO doit exposer uniquement les données nécessaires au contrat HTTP. Retourner l'entité `Customer` couplerait l'API au modèle JPA, pourrait exposer des champs non souhaités et compliquer les relations LAZY et la sérialisation.
+
+### 7. Pourquoi devons-nous appeler accountRepository.save() avant de construire la réponse contenant l'ID ?
+L'identifiant de `Account` est généré par JPA lors de la persistance. Avant `save`, l'objet nouvellement construit ne possède pas nécessairement son UUID généré. La réponse doit donc être construite à partir de l'entité persistée.
+
+### 8. Pourquoi AccountNotFoundException ne doit-elle pas connaître HttpStatus.NOT_FOUND ?
+L'exception appartient à la couche applicative et exprime uniquement qu'un compte n'existe pas. Le protocole HTTP appartient à la couche web. `GlobalExceptionHandler` traduit ensuite cette exception en réponse HTTP 404.
+
+### 9. Quel risque aurait-on pris en mettant FetchType.EAGER uniquement pour éviter une LazyInitializationException ?
+Cela masquerait un problème de frontière transactionnelle en forçant le chargement de `Customer` à chaque récupération d'un compte. On introduirait des requêtes et des données chargées inutilement, avec un risque de dégradation des performances à mesure que le modèle grandit.
+
+### 10. Pourquoi NUMERIC(10,2) est-il préférable à VARCHAR pour stocker un solde ?
+`NUMERIC(10,2)` représente une valeur décimale exacte et permet à PostgreSQL d'appliquer des opérations, comparaisons et contraintes numériques. `VARCHAR` stockerait le montant comme du texte, sans garantir sa validité numérique et en compliquant les calculs et tris.
