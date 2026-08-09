@@ -103,3 +103,36 @@ Pour centraliser les réponses 403 lorsque l'utilisateur est authentifié mais n
 401 : l'utilisateur n'est pas authentifié (JWT absent, invalide ou expiré).
 
 403 : l'utilisateur est authentifié mais ne possède pas les autorisations nécessaires.
+
+
+## BANK-009 - Customer Management
+
+### 1. Pourquoi ne retourne-t-on pas directement l'Entity Customer depuis le Controller ?
+Pour éviter de coupler le contrat HTTP au modèle de persistance. Un DTO permet de choisir explicitement les données exposées, d'éviter de révéler des champs techniques ou sensibles et de faire évoluer l'API indépendamment de l'entité JPA.
+
+### 2. Quelle différence de responsabilité entre CustomerController, CustomerService et CustomerRepository ?
+`CustomerController` gère la frontière HTTP : routes, validation des entrées et codes de réponse. `CustomerService` porte les cas d'utilisation et orchestre la logique applicative. `CustomerRepository` encapsule l'accès aux données avec Spring Data JPA.
+
+### 3. Pourquoi utiliser findById(...).orElseThrow(...) plutôt que getReferenceById() ?
+`findById` charge explicitement l'entité et représente l'absence avec `Optional`. Cela permet de transformer proprement le cas absent en `CustomerNotFoundException`. `getReferenceById` peut retourner un proxy JPA et reporter l'accès réel à la base.
+
+### 4. Pourquoi CustomerNotFoundException ne doit-elle pas contenir HttpStatus.NOT_FOUND ?
+Parce qu'une exception applicative doit exprimer le problème fonctionnel, pas le protocole HTTP. Le mapping vers 404 appartient à la couche web via `GlobalExceptionHandler`.
+
+### 5. Quel est le rôle de @RestControllerAdvice et @ExceptionHandler ?
+`@RestControllerAdvice` centralise la gestion des exceptions des controllers REST. `@ExceptionHandler` associe un type d'exception à une réponse HTTP cohérente.
+
+### 6. Pourquoi placer Bean Validation sur CreateCustomerRequest ?
+Le DTO représente le contrat d'entrée de l'API. Les contraintes `@NotBlank`, `@Email` et `@Size` décrivent directement ce contrat et permettent au Controller de rester sans logique de validation manuelle.
+
+### 7. Pourquoi postalCode est-il une String ?
+Un code postal est un identifiant textuel, pas une quantité. Il peut contenir des lettres, espaces, tirets et des zéros initiaux.
+
+### 8. Pourquoi utiliser un UUID pour Customer ?
+Il fournit un identifiant globalement unique et non séquentiel. Cela rend aussi l'énumération triviale plus difficile, mais ne remplace jamais les contrôles d'autorisation.
+
+### 9. À quoi servent @PrePersist et @PreUpdate ?
+`@PrePersist` initialise les timestamps avant la première persistance. `@PreUpdate` met à jour `updatedAt` avant une modification.
+
+### 10. Quelle différence entre NOT NULL et @NotBlank ?
+`NOT NULL` protège l'intégrité au niveau PostgreSQL. `@NotBlank` valide plus tôt la requête HTTP et refuse également les chaînes vides ou uniquement composées d'espaces.
