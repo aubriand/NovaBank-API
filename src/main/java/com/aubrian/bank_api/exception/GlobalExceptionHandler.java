@@ -67,4 +67,17 @@ public class GlobalExceptionHandler {
         request.getRequestURI());
     return new ResponseEntity<ApiErrorResponse>(apiErrorResponse, HttpStatus.CONFLICT);
   }
+
+  @ExceptionHandler(SameAccountTransferException.class)
+  public ResponseEntity<ApiErrorResponse> handleSameAccountTransfer(
+      SameAccountTransferException exception,
+      HttpServletRequest request) {
+    ApiErrorResponse apiErrorResponse = new ApiErrorResponse(
+        Instant.now(),
+        HttpStatus.CONFLICT.value(),
+        HttpStatus.CONFLICT.getReasonPhrase(),
+        exception.getMessage(),
+        request.getRequestURI());
+    return new ResponseEntity<ApiErrorResponse>(apiErrorResponse, HttpStatus.CONFLICT);
+  }
 }

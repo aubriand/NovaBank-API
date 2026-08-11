@@ -160,7 +160,7 @@ public class TransactionControllerIntegrationTests {
     CreateTransactionRequest request = new CreateTransactionRequest(TransactionType.WITHDRAWAL,
         BigDecimal.valueOf(10.00));
     mockMvc.perform(
-        post("/accounts/732ec5a0-94e2-4c3d-8c19-2a4629120d11/transactions")
+        post("/accounts/00000000-0000-0000-0000-000000000000/transactions")
             .header("Authorization", "Bearer " + token)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .content(asJsonString(request)))

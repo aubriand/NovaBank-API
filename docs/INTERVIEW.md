@@ -366,3 +366,35 @@ données reçues, par exemple qu'un montant est strictement positif. Un
 invariant métier dépend de l'état du domaine : un montant positif peut
 être valide en entrée mais un retrait doit encore être refusé si le
 compte ne dispose pas d'un solde suffisant.
+
+## BANK-012 - Transfer Management
+
+### 1. Pourquoi `@Transactional` doit-il englober tout le transfert ?
+Un transfert modifie plusieurs données qui forment une seule opération métier : débit du compte source, crédit du compte destination et persistance du transfert. Si une étape échoue, toutes les modifications doivent être annulées afin d'éviter un état incohérent.
+
+### 2. Pourquoi ne pas modifier directement `balance` depuis `TransferService` ?
+Le compte est responsable de ses invariants métier. `Account.withdraw()` contrôle notamment le solde disponible et `Account.deposit()` applique le crédit. `TransferService` orchestre le cas d'utilisation sans dupliquer cette logique.
+
+### 3. Quelle est la différence entre `==` et `equals()` pour deux UUID ?
+`==` compare les références des objets. `equals()` compare leurs valeurs. Deux objets `UUID` différents peuvent représenter le même UUID et doivent donc être comparés avec `equals()`.
+
+### 4. Pourquoi protéger `source != destination` à la fois dans le service et en base ?
+Le service permet de produire immédiatement une erreur métier explicite. La contrainte SQL constitue une dernière protection de l'intégrité des données si la base est appelée depuis un autre chemin.
+
+### 5. Pourquoi `rollbackFor` n'est-il pas nécessaire pour `RuntimeException` ?
+Par défaut, Spring effectue le rollback d'une transaction lorsqu'une `RuntimeException` ou une `Error` remonte hors de la méthode transactionnelle. `rollbackFor` est utile lorsqu'on veut modifier ce comportement, notamment pour certaines checked exceptions.
+
+### 6. Pourquoi un test avec un solde insuffisant ne prouve-t-il pas le rollback ?
+Parce que `withdraw()` échoue avant toute modification. Pour tester réellement le rollback, il faut provoquer une exception après qu'une modification a eu lieu, puis vérifier que l'état initial a été restauré.
+
+### 7. Pourquoi `TransferService` ne doit-il pas appeler `TransactionController` ou simuler deux appels HTTP ?
+Les Controllers représentent la frontière HTTP et ne constituent pas une API interne entre cas d'utilisation. Un transfert est un cas d'utilisation métier autonome qui orchestre directement les composants applicatifs nécessaires.
+
+### 8. Pourquoi utiliser `BigDecimal` pour les montants bancaires ?
+`BigDecimal` permet une représentation décimale précise et évite les erreurs d'arrondi binaires de `double` ou `float`, incompatibles avec des calculs monétaires fiables.
+
+### 9. Quel est le rôle de `TransferRepository` ?
+Il encapsule la persistance des transferts. Il ne porte ni la logique de débit/crédit ni l'orchestration transactionnelle du cas d'utilisation.
+
+### 10. Quelle différence entre Bean Validation, règle métier et contrainte SQL ?
+Bean Validation protège la frontière HTTP contre des données structurellement invalides. Le domaine et le service appliquent les règles métier et produisent des erreurs explicites. Les contraintes SQL constituent la dernière ligne de défense de l'intégrité persistée.
