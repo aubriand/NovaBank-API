@@ -1,5 +1,3 @@
-DELETE FROM users;
-
 INSERT INTO users (
     id, email, password, enabled, role, created_at, updated_at
 )

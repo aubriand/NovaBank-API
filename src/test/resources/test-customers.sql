@@ -1,6 +1,3 @@
-DELETE FROM accounts;
-DELETE FROM customers;
-
 INSERT INTO customers (
     id, email, first_name, last_name, address, country, postal_code, created_at, updated_at
 )

@@ -1,3 +1,4 @@
+DELETE FROM transactions;
 DELETE FROM accounts;
 
 INSERT INTO accounts (
@@ -8,7 +9,7 @@ VALUES
     '732ec5a0-94e2-4c3d-8c19-2a4629120d10',
     '732ec5a0-94e2-4c3d-8c19-2a4629120d07',
     'NB1234567891234567891234567913246579',
-    250.00,
+    100.00,
     NOW(),
     NOW()
 );

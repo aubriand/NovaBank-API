@@ -1,5 +1,12 @@
 package com.aubrian.bank_api.account;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+import com.aubrian.bank_api.customer.Customer;
+import com.aubrian.bank_api.exception.InsufficientBalanceException;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -11,12 +18,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.UUID;
-
-import com.aubrian.bank_api.customer.Customer;
 
 @Entity
 @Table(name = "accounts")
@@ -83,5 +84,16 @@ public class Account {
 
   public LocalDateTime getUpdatedAt() {
     return updatedAt;
+  }
+
+  public void deposit(BigDecimal amount) {
+    balance = balance.add(amount);
+  }
+
+  public void withdraw(BigDecimal amount) {
+    if (balance.compareTo(amount) < 0) {
+      throw new InsufficientBalanceException("Insufficient balance");
+    }
+    balance = balance.subtract(amount);
   }
 }

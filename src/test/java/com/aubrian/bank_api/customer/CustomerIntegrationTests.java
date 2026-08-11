@@ -21,7 +21,7 @@ import tools.jackson.databind.ObjectMapper;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Sql(scripts = {"/test-customers.sql", "/test-users.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(scripts = {"/test-cleanup.sql", "/test-customers.sql", "/test-users.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 public class CustomerIntegrationTests {
 
   @Autowired
