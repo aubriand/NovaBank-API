@@ -25,7 +25,7 @@ import tools.jackson.databind.ObjectMapper;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Sql(scripts = { "/test-users.sql", "/test-customers.sql",
+@Sql(scripts = { "/test-cleanup.sql", "/test-users.sql", "/test-customers.sql",
     "/test-accounts.sql" }, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 public class AccountControllerIntegrationTest {
   @Autowired
@@ -99,7 +99,7 @@ public class AccountControllerIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(MockMvcResultMatchers.jsonPath("$.customerId").value("732ec5a0-94e2-4c3d-8c19-2a4629120d07"))
         .andExpect(MockMvcResultMatchers.jsonPath("$.iban", startsWith("NB")))
-        .andExpect(MockMvcResultMatchers.jsonPath("$.balance").value(BigDecimal.valueOf(250.0)))
+        .andExpect(MockMvcResultMatchers.jsonPath("$.balance").value(BigDecimal.valueOf(100.0)))
         .andExpect(MockMvcResultMatchers.jsonPath("$.id").exists());
   }
 

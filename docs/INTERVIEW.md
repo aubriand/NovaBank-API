@@ -3,167 +3,366 @@
 ## BANK-005 - Spring Security
 
 ### 1. Pourquoi SecurityFilterChain remplace-t-il WebSecurityConfigurerAdapter ?
-Spring Security privilégie une configuration déclarative par beans plutôt que l'héritage. Cela rend la configuration plus explicite, composable et testable.
+
+Spring Security privilégie une configuration déclarative par beans
+plutôt que l'héritage. Cela rend la configuration plus explicite,
+composable et testable.
 
 ### 2. Pourquoi injecter PasswordEncoder ?
-Pour réduire le couplage, centraliser la configuration et faciliter les tests.
+
+Pour réduire le couplage, centraliser la configuration et faciliter les
+tests.
 
 ### 3. HTTP Basic vs JWT
-HTTP Basic renvoie les identifiants à chaque requête. JWT envoie un token signé obtenu après authentification. En mode stateless, le serveur ne conserve pas de session HTTP.
+
+HTTP Basic renvoie les identifiants à chaque requête. JWT envoie un
+token signé obtenu après authentification. En mode stateless, le serveur
+ne conserve pas de session HTTP.
 
 ### 4. Pourquoi désactiver CSRF ?
-Le CSRF protège principalement les authentifications basées sur des cookies. Avec un JWT transmis dans l'en-tête Authorization, cette protection est généralement inutile.
+
+Le CSRF protège principalement les authentifications basées sur des
+cookies. Avec un JWT transmis dans l'en-tête Authorization, cette
+protection est généralement inutile.
 
 ### 5. Pourquoi "deny by default" ?
-Toutes les nouvelles routes sont protégées automatiquement ; seules les routes explicitement autorisées sont publiques.
+
+Toutes les nouvelles routes sont protégées automatiquement ; seules les
+routes explicitement autorisées sont publiques.
 
 ## BANK-006 - JWT Authentication
 
 ### 1. Pourquoi utiliser AuthenticationManager plutôt que UserDetailsService directement ?
-`AuthenticationManager` orchestre l'authentification complète : sélection des providers, chargement de l'utilisateur, comparaison du mot de passe et vérifications du compte. `UserDetailsService` ne fait que charger un utilisateur.
+
+`AuthenticationManager` orchestre l'authentification complète :
+sélection des providers, chargement de l'utilisateur, comparaison du mot
+de passe et vérifications du compte. `UserDetailsService` ne fait que
+charger un utilisateur.
 
 ### 2. Quelle est la différence entre 401 et 403 ?
-401 : l'utilisateur n'est pas authentifié, par exemple si le token est absent, invalide ou expiré.
 
-403 : l'utilisateur est authentifié mais ne possède pas les droits nécessaires.
+401 : l'utilisateur n'est pas authentifié, par exemple si le token est
+absent, invalide ou expiré.
+
+403 : l'utilisateur est authentifié mais ne possède pas les droits
+nécessaires.
 
 ### 3. Pourquoi utiliser OncePerRequestFilter ?
-Pour garantir que le filtre JWT ne s'exécute qu'une seule fois par requête.
+
+Pour garantir que le filtre JWT ne s'exécute qu'une seule fois par
+requête.
 
 ### 4. Pourquoi vérifier que le SecurityContext est vide avant d'authentifier ?
-Pour ne pas remplacer une authentification déjà établie par un autre mécanisme de Spring Security.
+
+Pour ne pas remplacer une authentification déjà établie par un autre
+mécanisme de Spring Security.
 
 ### 5. Pourquoi l'application est-elle configurée en STATELESS ?
-Le serveur ne conserve aucune session HTTP. Chaque requête transporte son JWT.
+
+Le serveur ne conserve aucune session HTTP. Chaque requête transporte
+son JWT.
 
 ### 6. Quel est le rôle d'AuthenticationEntryPoint ?
-Centraliser la réponse lorsqu'une authentification échoue avec un statut 401 Unauthorized.
+
+Centraliser la réponse lorsqu'une authentification échoue avec un statut
+401 Unauthorized.
 
 ### 7. Pourquoi utiliser AuthenticationManager avec UsernamePasswordAuthenticationToken ?
-`AuthenticationManager` délègue la vérification des identifiants aux `AuthenticationProvider` configurés.
+
+`AuthenticationManager` délègue la vérification des identifiants aux
+`AuthenticationProvider` configurés.
 
 ### 8. Pourquoi ne pas appeler UserDetailsService depuis le Controller ?
-Le controller ne contient aucune logique métier. Toute l'authentification est portée par `AuthenticationService`.
+
+Le controller ne contient aucune logique métier. Toute
+l'authentification est portée par `AuthenticationService`.
 
 ### 9. Pourquoi ne pas stocker les rôles comme unique source de vérité dans le JWT ?
-Les rôles peuvent évoluer. Les recharger côté serveur garantit que les autorisations appliquées sont à jour.
+
+Les rôles peuvent évoluer. Les recharger côté serveur garantit que les
+autorisations appliquées sont à jour.
 
 ### 10. Pourquoi utiliser un record pour LoginRequest, LoginResponse et ApiErrorResponse ?
+
 Ils sont immuables, concis et adaptés aux DTO.
 
 ## BANK-007 - User Management
 
 ### 1. Pourquoi créer JpaUserDetailsService au lieu d'injecter UserRepository dans AuthenticationService ?
-`JpaUserDetailsService` respecte le contrat attendu par Spring Security et isole l'accès aux utilisateurs persistés. `AuthenticationService` reste concentré sur le cas d'utilisation de connexion et délègue l'authentification à `AuthenticationManager`. Cela évite de contourner les providers, le `PasswordEncoder` et les vérifications de compte.
+
+`JpaUserDetailsService` respecte le contrat attendu par Spring Security
+et isole l'accès aux utilisateurs persistés. `AuthenticationService`
+reste concentré sur le cas d'utilisation de connexion et délègue
+l'authentification à `AuthenticationManager`. Cela évite de contourner
+les providers, le `PasswordEncoder` et les vérifications de compte.
 
 ### 2. Pourquoi l'entité User n'implémente-t-elle pas directement UserDetails ?
-Pour éviter de coupler le modèle de persistance à Spring Security. L'entité représente les données stockées en base, tandis que `UserDetails` représente le principal de sécurité. `JpaUserDetailsService` joue le rôle d'adaptateur entre les deux.
+
+Pour éviter de coupler le modèle de persistance à Spring Security.
+L'entité représente les données stockées en base, tandis que
+`UserDetails` représente le principal de sécurité.
+`JpaUserDetailsService` joue le rôle d'adaptateur entre les deux.
 
 ### 3. Pourquoi stocker un hash BCrypt plutôt que le mot de passe en clair ?
-Un mot de passe ne doit jamais être récupérable depuis la base. BCrypt produit un hash lent et salé, ce qui limite l'efficacité des attaques par brute force et empêche deux mots de passe identiques d'avoir systématiquement le même hash. Lors du login, Spring compare le mot de passe reçu au hash avec `PasswordEncoder.matches`.
+
+Un mot de passe ne doit jamais être récupérable depuis la base. BCrypt
+produit un hash lent et salé, ce qui limite l'efficacité des attaques
+par brute force et empêche deux mots de passe identiques d'avoir
+systématiquement le même hash. Lors du login, Spring compare le mot de
+passe reçu au hash avec `PasswordEncoder.matches`.
 
 ### 4. Quel est le rôle d'AuthenticationManager ?
-`AuthenticationManager` orchestre la chaîne d'authentification. Il reçoit un objet `Authentication`, sélectionne un `AuthenticationProvider`, charge l'utilisateur via `UserDetailsService`, vérifie le mot de passe avec `PasswordEncoder` et retourne une authentification validée ou lève une exception.
 
-### 5. Pourquoi retourner Optional<User> depuis UserRepository ?
-Parce qu'une recherche par email peut ne rien retourner. `Optional` représente explicitement cette absence, évite le retour de `null` et oblige l'appelant à gérer le cas, par exemple avec `orElseThrow`.
+`AuthenticationManager` orchestre la chaîne d'authentification. Il
+reçoit un objet `Authentication`, sélectionne un
+`AuthenticationProvider`, charge l'utilisateur via `UserDetailsService`,
+vérifie le mot de passe avec `PasswordEncoder` et retourne une
+authentification validée ou lève une exception.
+
+### 5. Pourquoi retourner Optional`<User>`{=html} depuis UserRepository ?
+
+Parce qu'une recherche par email peut ne rien retourner. `Optional`
+représente explicitement cette absence, évite le retour de `null` et
+oblige l'appelant à gérer le cas, par exemple avec `orElseThrow`.
 
 ## BANK-008 - Roles & Authorizations
 
 ### 1. Pourquoi utiliser EnumType.STRING plutôt que ORDINAL ?
 
-Le stockage sous forme de texte reste stable si l'ordre des constantes change. Avec ORDINAL, modifier l'ordre de l'enum peut corrompre les données existantes.
+Le stockage sous forme de texte reste stable si l'ordre des constantes
+change. Avec ORDINAL, modifier l'ordre de l'enum peut corrompre les
+données existantes.
 
----
+------------------------------------------------------------------------
 
 ### 2. Quelle est la différence entre hasRole() et hasAuthority() ?
 
 `hasRole("ADMIN")` recherche automatiquement l'autorité `ROLE_ADMIN`.
 
-`hasAuthority("ROLE_ADMIN")` compare directement la valeur fournie sans ajouter de préfixe.
+`hasAuthority("ROLE_ADMIN")` compare directement la valeur fournie sans
+ajouter de préfixe.
 
----
+------------------------------------------------------------------------
 
 ### 3. Pourquoi créer un AccessDeniedHandler ?
 
-Pour centraliser les réponses 403 lorsque l'utilisateur est authentifié mais ne possède pas les autorisations nécessaires.
+Pour centraliser les réponses 403 lorsque l'utilisateur est authentifié
+mais ne possède pas les autorisations nécessaires.
 
----
+------------------------------------------------------------------------
 
 ### 4. Quelle est la différence entre AuthenticationEntryPoint et AccessDeniedHandler ?
 
-`AuthenticationEntryPoint` intervient lorsqu'une authentification est requise ou invalide et renvoie un 401.
+`AuthenticationEntryPoint` intervient lorsqu'une authentification est
+requise ou invalide et renvoie un 401.
 
-`AccessDeniedHandler` intervient lorsqu'un utilisateur authentifié tente d'accéder à une ressource sans les droits nécessaires et renvoie un 403.
+`AccessDeniedHandler` intervient lorsqu'un utilisateur authentifié tente
+d'accéder à une ressource sans les droits nécessaires et renvoie un 403.
 
----
+------------------------------------------------------------------------
 
 ### 5. Quelle est la différence entre 401 et 403 ?
 
-401 : l'utilisateur n'est pas authentifié (JWT absent, invalide ou expiré).
+401 : l'utilisateur n'est pas authentifié (JWT absent, invalide ou
+expiré).
 
-403 : l'utilisateur est authentifié mais ne possède pas les autorisations nécessaires.
-
+403 : l'utilisateur est authentifié mais ne possède pas les
+autorisations nécessaires.
 
 ## BANK-009 - Customer Management
 
 ### 1. Pourquoi ne retourne-t-on pas directement l'Entity Customer depuis le Controller ?
-Pour éviter de coupler le contrat HTTP au modèle de persistance. Un DTO permet de choisir explicitement les données exposées, d'éviter de révéler des champs techniques ou sensibles et de faire évoluer l'API indépendamment de l'entité JPA.
+
+Pour éviter de coupler le contrat HTTP au modèle de persistance. Un DTO
+permet de choisir explicitement les données exposées, d'éviter de
+révéler des champs techniques ou sensibles et de faire évoluer l'API
+indépendamment de l'entité JPA.
 
 ### 2. Quelle différence de responsabilité entre CustomerController, CustomerService et CustomerRepository ?
-`CustomerController` gère la frontière HTTP : routes, validation des entrées et codes de réponse. `CustomerService` porte les cas d'utilisation et orchestre la logique applicative. `CustomerRepository` encapsule l'accès aux données avec Spring Data JPA.
+
+`CustomerController` gère la frontière HTTP : routes, validation des
+entrées et codes de réponse. `CustomerService` porte les cas
+d'utilisation et orchestre la logique applicative. `CustomerRepository`
+encapsule l'accès aux données avec Spring Data JPA.
 
 ### 3. Pourquoi utiliser findById(...).orElseThrow(...) plutôt que getReferenceById() ?
-`findById` charge explicitement l'entité et représente l'absence avec `Optional`. Cela permet de transformer proprement le cas absent en `CustomerNotFoundException`. `getReferenceById` peut retourner un proxy JPA et reporter l'accès réel à la base.
+
+`findById` charge explicitement l'entité et représente l'absence avec
+`Optional`. Cela permet de transformer proprement le cas absent en
+`CustomerNotFoundException`. `getReferenceById` peut retourner un proxy
+JPA et reporter l'accès réel à la base.
 
 ### 4. Pourquoi CustomerNotFoundException ne doit-elle pas contenir HttpStatus.NOT_FOUND ?
-Parce qu'une exception applicative doit exprimer le problème fonctionnel, pas le protocole HTTP. Le mapping vers 404 appartient à la couche web via `GlobalExceptionHandler`.
+
+Parce qu'une exception applicative doit exprimer le problème
+fonctionnel, pas le protocole HTTP. Le mapping vers 404 appartient à la
+couche web via `GlobalExceptionHandler`.
 
 ### 5. Quel est le rôle de @RestControllerAdvice et @ExceptionHandler ?
-`@RestControllerAdvice` centralise la gestion des exceptions des controllers REST. `@ExceptionHandler` associe un type d'exception à une réponse HTTP cohérente.
+
+`@RestControllerAdvice` centralise la gestion des exceptions des
+controllers REST. `@ExceptionHandler` associe un type d'exception à une
+réponse HTTP cohérente.
 
 ### 6. Pourquoi placer Bean Validation sur CreateCustomerRequest ?
-Le DTO représente le contrat d'entrée de l'API. Les contraintes `@NotBlank`, `@Email` et `@Size` décrivent directement ce contrat et permettent au Controller de rester sans logique de validation manuelle.
+
+Le DTO représente le contrat d'entrée de l'API. Les contraintes
+`@NotBlank`, `@Email` et `@Size` décrivent directement ce contrat et
+permettent au Controller de rester sans logique de validation manuelle.
 
 ### 7. Pourquoi postalCode est-il une String ?
-Un code postal est un identifiant textuel, pas une quantité. Il peut contenir des lettres, espaces, tirets et des zéros initiaux.
+
+Un code postal est un identifiant textuel, pas une quantité. Il peut
+contenir des lettres, espaces, tirets et des zéros initiaux.
 
 ### 8. Pourquoi utiliser un UUID pour Customer ?
-Il fournit un identifiant globalement unique et non séquentiel. Cela rend aussi l'énumération triviale plus difficile, mais ne remplace jamais les contrôles d'autorisation.
+
+Il fournit un identifiant globalement unique et non séquentiel. Cela
+rend aussi l'énumération triviale plus difficile, mais ne remplace
+jamais les contrôles d'autorisation.
 
 ### 9. À quoi servent @PrePersist et @PreUpdate ?
-`@PrePersist` initialise les timestamps avant la première persistance. `@PreUpdate` met à jour `updatedAt` avant une modification.
+
+`@PrePersist` initialise les timestamps avant la première persistance.
+`@PreUpdate` met à jour `updatedAt` avant une modification.
 
 ### 10. Quelle différence entre NOT NULL et @NotBlank ?
-`NOT NULL` protège l'intégrité au niveau PostgreSQL. `@NotBlank` valide plus tôt la requête HTTP et refuse également les chaînes vides ou uniquement composées d'espaces.
+
+`NOT NULL` protège l'intégrité au niveau PostgreSQL. `@NotBlank` valide
+plus tôt la requête HTTP et refuse également les chaînes vides ou
+uniquement composées d'espaces.
+
 ## BANK-010 - Account Management
 
 ### 1. Pourquoi Account → Customer est-il modélisé avec @ManyToOne et non @OneToOne ?
-Plusieurs comptes bancaires peuvent appartenir au même client, tandis qu'un compte appartient à un seul client. La relation côté `Account` est donc `@ManyToOne`.
+
+Plusieurs comptes bancaires peuvent appartenir au même client, tandis
+qu'un compte appartient à un seul client. La relation côté `Account` est
+donc `@ManyToOne`.
 
 ### 2. Pourquoi avons-nous choisi FetchType.LAZY sur la relation Customer ?
-Pour éviter de charger systématiquement le `Customer` avec chaque `Account` lorsque ses données ne sont pas nécessaires. Cela limite les chargements inutiles et laisse le cas d'utilisation décider quand la relation doit être chargée.
+
+Pour éviter de charger systématiquement le `Customer` avec chaque
+`Account` lorsque ses données ne sont pas nécessaires. Cela limite les
+chargements inutiles et laisse le cas d'utilisation décider quand la
+relation doit être chargée.
 
 ### 3. Pourquoi utilise-t-on BigDecimal pour balance plutôt que double ?
-`double` utilise une représentation binaire en virgule flottante qui peut introduire des erreurs d'arrondi. `BigDecimal` permet des calculs décimaux précis et contrôlés, indispensables pour des montants financiers.
+
+`double` utilise une représentation binaire en virgule flottante qui
+peut introduire des erreurs d'arrondi. `BigDecimal` permet des calculs
+décimaux précis et contrôlés, indispensables pour des montants
+financiers.
 
 ### 4. Pourquoi le client HTTP ne peut-il pas fournir le solde initial lors de POST /accounts ?
-Le solde initial est un invariant métier contrôlé par le serveur. Autoriser le client à le choisir permettrait de créer arbitrairement de l'argent. Le compte est donc créé avec `BigDecimal.ZERO` côté serveur.
+
+Le solde initial est un invariant métier contrôlé par le serveur.
+Autoriser le client à le choisir permettrait de créer arbitrairement de
+l'argent. Le compte est donc créé avec `BigDecimal.ZERO` côté serveur.
 
 ### 5. Quelle différence entre nullable = false dans @JoinColumn et NOT NULL dans la migration SQL ?
-`nullable = false` décrit la contrainte dans le mapping JPA et peut être utilisé par Hibernate pour le schéma ou certaines vérifications. `NOT NULL` est la contrainte réellement appliquée par PostgreSQL et protège l'intégrité des données indépendamment de l'application.
+
+`nullable = false` décrit la contrainte dans le mapping JPA. `NOT NULL`
+est la contrainte réellement appliquée par PostgreSQL et protège
+l'intégrité des données indépendamment de l'application.
 
 ### 6. Pourquoi AccountResponse expose-t-il customerId plutôt que l'objet Customer complet ?
-Le DTO doit exposer uniquement les données nécessaires au contrat HTTP. Retourner l'entité `Customer` couplerait l'API au modèle JPA, pourrait exposer des champs non souhaités et compliquer les relations LAZY et la sérialisation.
+
+Le DTO expose uniquement les données nécessaires au contrat HTTP.
+Retourner l'entité `Customer` couplerait l'API au modèle JPA et pourrait
+exposer des champs non souhaités.
 
 ### 7. Pourquoi devons-nous appeler accountRepository.save() avant de construire la réponse contenant l'ID ?
-L'identifiant de `Account` est généré par JPA lors de la persistance. Avant `save`, l'objet nouvellement construit ne possède pas nécessairement son UUID généré. La réponse doit donc être construite à partir de l'entité persistée.
+
+L'identifiant de `Account` est généré par JPA lors de la persistance. La
+réponse doit donc être construite à partir de l'entité persistée.
 
 ### 8. Pourquoi AccountNotFoundException ne doit-elle pas connaître HttpStatus.NOT_FOUND ?
-L'exception appartient à la couche applicative et exprime uniquement qu'un compte n'existe pas. Le protocole HTTP appartient à la couche web. `GlobalExceptionHandler` traduit ensuite cette exception en réponse HTTP 404.
+
+L'exception exprime un problème applicatif. Le protocole HTTP appartient
+à la couche web, qui traduit l'exception en 404 via
+`GlobalExceptionHandler`.
 
 ### 9. Quel risque aurait-on pris en mettant FetchType.EAGER uniquement pour éviter une LazyInitializationException ?
-Cela masquerait un problème de frontière transactionnelle en forçant le chargement de `Customer` à chaque récupération d'un compte. On introduirait des requêtes et des données chargées inutilement, avec un risque de dégradation des performances à mesure que le modèle grandit.
+
+Cela masquerait un problème de frontière transactionnelle et chargerait
+`Customer` même lorsqu'il n'est pas nécessaire, avec un coût potentiel
+en performances.
 
 ### 10. Pourquoi NUMERIC(10,2) est-il préférable à VARCHAR pour stocker un solde ?
-`NUMERIC(10,2)` représente une valeur décimale exacte et permet à PostgreSQL d'appliquer des opérations, comparaisons et contraintes numériques. `VARCHAR` stockerait le montant comme du texte, sans garantir sa validité numérique et en compliquant les calculs et tris.
+
+`NUMERIC(10,2)` représente une valeur décimale exacte et permet à
+PostgreSQL d'appliquer des opérations et contraintes numériques.
+`VARCHAR` stockerait le montant comme du texte.
+
+## BANK-011 - Transaction Management
+
+### 1. Pourquoi TransactionService.create() doit-il être @Transactional ?
+
+Parce que la modification du solde du compte et l'enregistrement de la
+transaction constituent une seule opération métier. `@Transactional`
+garantit leur atomicité : soit les deux changements sont validés, soit
+aucun ne l'est en cas d'exception.
+
+### 2. Pourquoi la règle « solde insuffisant » appartient-elle à Account.withdraw() plutôt qu'au Controller ou uniquement au Service ?
+
+Parce que le solde non négatif est un invariant de l'entité `Account`.
+En plaçant la vérification dans `withdraw()`, le compte protège lui-même
+son état quel que soit le service qui déclenche le retrait. Le Service
+orchestre le cas d'utilisation et le Controller reste limité à la couche
+HTTP.
+
+### 3. Pourquoi BigDecimal.add() et subtract() nécessitent-ils une réaffectation ?
+
+`BigDecimal` est immuable. `add()` et `subtract()` ne modifient pas
+l'instance existante : elles retournent une nouvelle valeur. Il faut
+donc faire par exemple `balance = balance.add(amount)`.
+
+### 4. Pourquoi compareTo() est-il préférable à equals() pour comparer des montants BigDecimal ?
+
+`compareTo()` compare la valeur numérique alors que `equals()` tient
+également compte de l'échelle. Par exemple, `10.0` et `10.00` sont
+numériquement égaux avec `compareTo() == 0`, mais pas nécessairement
+avec `equals()`.
+
+### 5. Pourquoi la relation Transaction → Account est-elle un ManyToOne en LAZY ?
+
+Un compte peut avoir plusieurs transactions, tandis qu'une transaction
+appartient à un seul compte : la relation côté `Transaction` est donc
+`ManyToOne`. `LAZY` évite de charger systématiquement le compte lorsque
+seules les données de transaction sont nécessaires.
+
+### 6. Pourquoi stocker TransactionType avec EnumType.STRING ?
+
+Le stockage textuel (`DEPOSIT`, `WITHDRAWAL`) reste lisible et stable si
+l'ordre des constantes Java change. Avec `ORDINAL`, réordonner l'enum
+pourrait modifier la signification des valeurs déjà stockées.
+
+### 7. Pourquoi un retrait refusé retourne-t-il 409 Conflict plutôt que 400 Bad Request ?
+
+La requête peut être syntaxiquement valide et respecter Bean Validation,
+mais entrer en conflit avec l'état actuel de la ressource : le compte ne
+possède pas un solde suffisant. `409 Conflict` représente cette
+violation métier liée à l'état courant.
+
+### 8. Que garantit le rollback transactionnel si l'enregistrement de Transaction échoue après modification du balance ?
+
+Si une exception provoquant le rollback survient avant le commit, la
+transaction de base de données est annulée. La nouvelle transaction
+bancaire n'est pas persistée et la modification du solde n'est pas
+validée non plus : la base reste cohérente.
+
+### 9. Pourquoi TransactionResponse expose-t-il accountId plutôt que l'entité Account ?
+
+Le DTO définit explicitement le contrat HTTP et évite d'exposer le
+modèle JPA. Cela limite le couplage, évite des problèmes de
+sérialisation liés aux relations et n'expose que l'identifiant
+nécessaire au client.
+
+### 10. Quelle différence entre validation d'entrée (@Positive) et invariant métier (solde suffisant) ?
+
+La validation d'entrée vérifie la forme et les contraintes générales des
+données reçues, par exemple qu'un montant est strictement positif. Un
+invariant métier dépend de l'état du domaine : un montant positif peut
+être valide en entrée mais un retrait doit encore être refusé si le
+compte ne dispose pas d'un solde suffisant.

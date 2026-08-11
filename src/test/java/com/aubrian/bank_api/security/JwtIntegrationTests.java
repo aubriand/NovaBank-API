@@ -27,7 +27,7 @@ import tools.jackson.databind.ObjectMapper;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Sql(scripts = "/test-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(scripts = { "/test-cleanup.sql", "/test-users.sql" }, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Import(JwtIntegrationTests.ProtectedEnpointTestConfig.class)
 public class JwtIntegrationTests {
 
