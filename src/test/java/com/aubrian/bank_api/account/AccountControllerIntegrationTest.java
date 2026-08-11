@@ -106,7 +106,7 @@ public class AccountControllerIntegrationTest {
   @Test
   void shouldGetUnknownAccountReturnNotFound() throws Exception {
     mockMvc.perform(
-        get("/accounts/732ec5a0-94e2-4c3d-8c19-2a4629120d11")
+        get("/accounts/00000000-0000-0000-0000-000000000000")
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isNotFound())
         .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(404))
